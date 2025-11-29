@@ -1,3 +1,4 @@
+
 //#region -- STATE
 
 const STORAGE_KEY = 'multiMapViewerDataV2';
@@ -574,6 +575,7 @@ function importJson() {
     fileJson.click();
 }
 //#endregion
+
 //#region -- LISTENERS
 
 imageLayer.addEventListener('mousedown', (event) => {
