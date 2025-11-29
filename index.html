@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>EZpin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  
+  <main>
+    <input type="file" id="file-json" accept="application/json">
+    <div id="viewer-wrapper">
+      <div id="viewer">
+        <div id="placeholder">
+          <strong>No map image yet</strong>
+          Set an image URL in the right panel (or add a new map) to start placing pins.<br><br>
+          Tip: use a direct image URL (e.g. from an online map, Imgur, or a CDN).
+        </div>
+        <div id="image-layer">
+          <img id="main-image" src="" alt="It's broken :(">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
