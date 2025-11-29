@@ -1,7 +1,8 @@
 
 //#region -- STATE
-
-const STORAGE_KEY = 'multiMapViewerDataV2';
+const params = new URLSearchParams(window.location.search);
+const VIEWER_ID = params.get('world') || 'default';
+const STORAGE_KEY = `multiMapViewerDataV2_${VIEWER_ID}`;
 
 let state = {
     currentMapId: null,
@@ -37,6 +38,12 @@ const fileJson = document.getElementById('file-json');
 function generateId(prefix = 'map') {
     return prefix + '-' + Math.random().toString(36).slice(2, 9);
 }
+
+function getCurrentMap() {
+    return state.maps[state.currentMapId] || null;
+}
+
+//#region saving & loading
 
 function saveState() {
     try {
@@ -82,6 +89,9 @@ function loadState() {
     }
 }
 
+//#endregion
+
+//#region view 
 function applyTransform() {
     imageLayer.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${zoom})`;
 }
@@ -92,10 +102,9 @@ function resetView() {
     offsetY = 0;
     applyTransform();
 }
+//#endregion
 
-function getCurrentMap() {
-    return state.maps[state.currentMapId] || null;
-}
+//#region rendering
 
 function renderImage() {
     const map = getCurrentMap();
@@ -109,16 +118,6 @@ function renderImage() {
     imageLayer.style.display = 'inline-block';
     placeholder.style.display = 'none';
     resetView();
-}
-
-function clearPinsFromDOM() {
-    imageLayer.querySelectorAll('.pin').forEach(el => el.remove());
-}
-
-function getPinColor(pin) {
-    return pin.color || getComputedStyle(document.documentElement)
-        .getPropertyValue('--pin-default-color')
-        .trim() || '#ffffff';
 }
 
 function renderPins() {
@@ -165,10 +164,23 @@ function renderPins() {
     });
 }
 
+function clearPinsFromDOM() {
+    imageLayer.querySelectorAll('.pin').forEach(el => el.remove());
+}
+
+function getPinColor(pin) {
+    return pin.color || getComputedStyle(document.documentElement)
+        .getPropertyValue('--pin-default-color')
+        .trim() || '#ffffff';
+}
+
 function fullRender() {
     renderImage();
     renderPins();
 }
+//#endregion
+
+//#region tooltips
 
 function hideTooltip() {
     const existing = document.getElementById('active-tooltip');
@@ -368,6 +380,9 @@ function showEditTooltip(pinElement, pin, index) {
     viewer.appendChild(tooltip);
     positionTooltip(tooltip, pinElement);
 }
+//#endregion
+
+//#region menu
 
 function hideGlobalMenu() {
     const existing = document.getElementById('global-menu');
@@ -420,7 +435,7 @@ function showGlobalMenu(event) {
 
     const rowImage = document.createElement('div');
     rowImage.className = 'global-menu-row';
-    
+
     const labelName = document.createElement('label');
     labelName.textContent = 'Map name';
     rowImage.appendChild(labelName);
@@ -453,8 +468,7 @@ function showGlobalMenu(event) {
         current.name = inputName.value;
         saveState();
         fullRender();
-        //renderImage();
-        //renderPins();
+        hideGlobalMenu();
     });
     //Delete
     const btnDelete = document.createElement('button');
@@ -574,6 +588,8 @@ function importJson() {
     fileJson.value = '';
     fileJson.click();
 }
+//#endregion
+
 //#endregion
 
 //#region -- LISTENERS
