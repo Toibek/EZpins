@@ -26,6 +26,9 @@ let startOffsetX = 0;
 let startOffsetY = 0;
 let panMoved = false;
 
+
+const IMGBB_API_KEY = "96ed7896a95278922b1f4872077289a8"; // make secret later :3
+
 const viewer = document.getElementById('viewer');
 const imageLayer = document.getElementById('image-layer');
 const img = document.getElementById('main-image');
@@ -430,7 +433,7 @@ function showGlobalMenu(event) {
     menu.appendChild(rowMap);
 
     //#endregion    
-    
+
     //Settings
 
     const titleSettings = document.createElement('h3');
@@ -441,7 +444,6 @@ function showGlobalMenu(event) {
 
     const rowImage = document.createElement('div');
     rowImage.className = 'global-menu-row';
-
     const labelName = document.createElement('label');
     labelName.textContent = 'Map name';
     rowImage.appendChild(labelName);
@@ -460,6 +462,29 @@ function showGlobalMenu(event) {
     rowImage.appendChild(inputUrl);
 
     //#endregion
+    //Uppload button
+    const btnUpload = document.createElement('button');
+    btnUpload.style.rowGap = '5rem';
+    btnUpload.textContent = 'Upload Image';
+    btnUpload.addEventListener('click', async () => {
+        try {
+            const url = await pickFileAndUpload();
+            if (!url) return; // user cancelled
+
+            inputUrl.value = url;
+
+            const current = getCurrentMap();
+            if (current) {
+                current.imageUrl = url;
+                saveState();
+                fullRender();  // show the new image right away
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Failed to upload image.");
+        }
+    });
+    rowImage.appendChild(btnUpload);
 
     //#region save/delete
     const imgButtons = document.createElement('div');
@@ -484,7 +509,7 @@ function showGlobalMenu(event) {
     btnDelete.textContent = 'Delete';
     btnDelete.className = 'danger';
     btnDelete.addEventListener('click', deleteMap);
-    
+
     //Appending
     imgButtons.appendChild(btnApply);
     imgButtons.appendChild(btnDelete);
@@ -537,7 +562,7 @@ function showGlobalMenu(event) {
     rowImportExport.appendChild(btnExport);
     rowImportExport.appendChild(btnImport);
     menu.appendChild(rowImportExport);
-    
+
     //#endregion
 
     // #region close button
@@ -576,15 +601,67 @@ function showGlobalMenu(event) {
     });
 }
 
+async function uploadToImgBB(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+
+    const res = await fetch(
+        "https://api.imgbb.com/1/upload?key=" + encodeURIComponent(IMGBB_API_KEY),
+        {
+            method: "POST",
+            body: formData
+        }
+    );
+
+    if (!res.ok) {
+        throw new Error("Upload request failed with " + res.status);
+    }
+
+    const data = await res.json();
+
+    if (!data.success) {
+        console.error("ImgBB error:", data);
+        throw new Error("ImgBB returned `success: false`");
+    }
+
+    // Return the URL
+    return data.data.url || data.data.display_url;
+}
+
+function pickFileAndUpload() {
+    const fileInput = document.getElementById("file-image");
+
+    return new Promise((resolve, reject) => {
+        // One-shot handler
+        fileInput.onchange = async (event) => {
+            const file = event.target.files[0];
+            if (!file) {
+                resolve(null); // user cancelled
+                return;
+            }
+
+            try {
+                const url = await uploadToImgBB(file);
+                resolve(url);
+            } catch (err) {
+                reject(err);
+            } finally {
+                // reset input so selecting the same file again works
+                fileInput.value = "";
+            }
+        };
+
+        // Open the file picker
+        fileInput.click();
+    });
+}
+
 function addMap() {
-    const name = prompt('New map name?', 'New Map');
-    if (!name) return;
-    const url = prompt('Image URL for this map? (You can change it later)', '') || '';
     const id = generateId();
     state.maps[id] = {
         id,
-        name: name.trim(),
-        imageUrl: url.trim(),
+        name: "New map",
+        imageUrl: "",
         pins: []
     };
     state.currentMapId = id;
