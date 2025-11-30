@@ -402,7 +402,8 @@ function showGlobalMenu(event) {
     const current = getCurrentMap();
     const mapsArray = Object.values(state.maps);
 
-    // --- SELECT ---
+    //#region  map select
+
     //Header
     const titleSelect = document.createElement('h3');
     titleSelect.textContent = 'Map Select';
@@ -428,10 +429,15 @@ function showGlobalMenu(event) {
     rowMap.appendChild(btnAdd);
     menu.appendChild(rowMap);
 
+    //#endregion    
+    
     //Settings
+
     const titleSettings = document.createElement('h3');
     titleSettings.textContent = 'Map Settings';
     menu.appendChild(titleSettings);
+
+    //#region name /url
 
     const rowImage = document.createElement('div');
     rowImage.className = 'global-menu-row';
@@ -453,12 +459,14 @@ function showGlobalMenu(event) {
     inputUrl.value = current ? (current.imageUrl || '') : '';
     rowImage.appendChild(inputUrl);
 
+    //#endregion
+
+    //#region save/delete
     const imgButtons = document.createElement('div');
     imgButtons.style.display = 'flex';
     imgButtons.style.gap = '0.25rem';
     imgButtons.style.marginTop = '0.25rem';
 
-    //Save
     const btnApply = document.createElement('button');
     btnApply.textContent = 'Save';
     btnApply.addEventListener('click', () => {
@@ -470,20 +478,23 @@ function showGlobalMenu(event) {
         fullRender();
         hideGlobalMenu();
     });
+
     //Delete
     const btnDelete = document.createElement('button');
     btnDelete.textContent = 'Delete';
     btnDelete.className = 'danger';
     btnDelete.addEventListener('click', deleteMap);
-
+    
     //Appending
     imgButtons.appendChild(btnApply);
     imgButtons.appendChild(btnDelete);
     rowImage.appendChild(imgButtons);
 
+    //#endregion
+
     menu.appendChild(rowImage);
 
-    //Shortcuts / controls hint
+    //#region shortcuts
     const shortcuts = document.createElement('div');
     shortcuts.className = 'global-menu-shortcuts';
     shortcuts.innerHTML = `
@@ -497,19 +508,51 @@ function showGlobalMenu(event) {
       • Right click empty: Open menu
     `;
     menu.appendChild(shortcuts);
+    //#endregion
 
-    // Actions: close
+    //#region import/export
+    //Header
+    const titleImport = document.createElement('h3');
+    titleImport.textContent = 'Import / Export';
+    menu.appendChild(titleImport);
+    //Warning label
+    const labelImport = document.createElement('label');
+    labelImport.textContent = 'Importing will overwrite all current data!';
+    menu.appendChild(labelImport);
+    //div
+    const rowImportExport = document.createElement('div');
+    rowImportExport.className = 'global-menu-row';
+    rowImportExport.style.display = 'flex';
+    rowImportExport.style.gap = '0.25rem';
+    rowImportExport.style.marginTop = '0.25rem';
+    //export button
+    const btnExport = document.createElement('button');
+    btnExport.textContent = 'Export JSON';
+    btnExport.addEventListener('click', exportJson);
+    //import button
+    const btnImport = document.createElement('button');
+    btnImport.textContent = 'Import JSON';
+    btnImport.addEventListener('click', importJson);
+    //append
+    rowImportExport.appendChild(btnExport);
+    rowImportExport.appendChild(btnImport);
+    menu.appendChild(rowImportExport);
+    
+    //#endregion
+
+    // #region close button
+
     const actions = document.createElement('div');
     actions.className = 'global-menu-actions';
-
     const btnClose = document.createElement('button');
     btnClose.textContent = 'Close';
     btnClose.addEventListener('click', hideGlobalMenu);
-
     actions.appendChild(btnClose);
     menu.appendChild(actions);
 
-    // --- positioning ---
+    //#endregion
+
+    //#region positioning
 
     const viewerRect = viewer.getBoundingClientRect();
     const x = viewerRect.left //event.clientX - viewerRect.left;
@@ -519,6 +562,8 @@ function showGlobalMenu(event) {
     menu.style.top = `${y}px`;
 
     viewer.appendChild(menu);
+
+    //#endregion
 
     // Handle map change from dropdown
     select.addEventListener('change', () => {
