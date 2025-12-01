@@ -10,6 +10,7 @@ let state = {
 };
 
 let isDraggingPin = false;
+let draggingPinEl = null;
 let draggingPinIndex = null;
 let dragMoved = false;
 
@@ -247,37 +248,6 @@ function showInfoTooltip(pinElement, pin, index) {
         tooltip.appendChild(bodyRow);
     }
 
-    const actions = document.createElement('div');
-    actions.className = 'tooltip-actions';
-
-    const editBtn = document.createElement('button');
-    editBtn.textContent = 'Edit';
-    editBtn.addEventListener('click', () => {
-        showEditTooltip(pinElement, pin, index);
-    });
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = 'Delete';
-    deleteBtn.className = 'danger';
-    deleteBtn.addEventListener('click', () => {
-        if (!confirm('Delete this pin?')) return;
-        const map = getCurrentMap();
-        if (!map) return;
-        map.pins.splice(index, 1);
-        saveState();
-        hideTooltip();
-        renderPins();
-    });
-
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', hideTooltip);
-
-    //actions.appendChild(editBtn);
-    //actions.appendChild(deleteBtn);
-    //actions.appendChild(closeBtn);
-    tooltip.appendChild(actions);
-
     viewer.appendChild(tooltip);
     positionTooltip(tooltip, pinElement);
 }
@@ -312,6 +282,8 @@ function showEditTooltip(pinElement, pin, index) {
     rowNote.appendChild(labelNote);
     rowNote.appendChild(inputNote);
 
+    const emoji = document.createElement('emoji');
+    rowNote.appendChild(emoji)
     const rowIcon = document.createElement('div');
     rowIcon.className = 'tooltip-row';
     const labelIcon = document.createElement('div');
@@ -434,7 +406,7 @@ function showGlobalMenu(event) {
 
     //#endregion    
 
-    //Settings
+    //#region Settings
 
     const titleSettings = document.createElement('h3');
     titleSettings.textContent = 'Map Settings';
@@ -453,19 +425,22 @@ function showGlobalMenu(event) {
     rowImage.append(inputName);
 
     const labelImage = document.createElement('label');
-    labelImage.textContent = 'Image URL';
+    labelImage.textContent = 'Image';
     rowImage.appendChild(labelImage);
+
+    const rowImageUrl = document.createElement('div');
+    rowImageUrl.style.display = 'flex';
+    rowImageUrl.style.gap = '0.25rem';
+    rowImageUrl.style.marginTop = '0.25rem';
 
     const inputUrl = document.createElement('input');
     inputUrl.type = 'text';
     inputUrl.value = current ? (current.imageUrl || '') : '';
-    rowImage.appendChild(inputUrl);
 
     //#endregion
     //Uppload button
     const btnUpload = document.createElement('button');
-    btnUpload.style.rowGap = '5rem';
-    btnUpload.textContent = 'Upload Image';
+    btnUpload.textContent = 'Upload';
     btnUpload.addEventListener('click', async () => {
         try {
             const url = await pickFileAndUpload();
@@ -484,8 +459,9 @@ function showGlobalMenu(event) {
             alert("Failed to upload image.");
         }
     });
-    rowImage.appendChild(btnUpload);
-
+    rowImageUrl.appendChild(btnUpload);
+    rowImageUrl.appendChild(inputUrl);
+    rowImage.appendChild(rowImageUrl);
     //#region save/delete
     const imgButtons = document.createElement('div');
     imgButtons.style.display = 'flex';
@@ -518,6 +494,7 @@ function showGlobalMenu(event) {
     //#endregion
 
     menu.appendChild(rowImage);
+    //#endregion
 
     //#region shortcuts
     const shortcuts = document.createElement('div');
@@ -526,10 +503,10 @@ function showGlobalMenu(event) {
       <h3>Controls</h3>
       • Scroll: zoom<br>
       • Drag on map: pan<br>
-      • Ctrl+click empty: add pin<br>
-      • Click lick pin: view info<br>
+      • Double click empty: add pin<br>
+      • Click pin: view info<br>
       • Right click pin: edit<br>
-      • Shift+drag pin: move<br>
+      • Drag on pin: move<br>
       • Right click empty: Open menu
     `;
     menu.appendChild(shortcuts);
@@ -564,6 +541,8 @@ function showGlobalMenu(event) {
     menu.appendChild(rowImportExport);
 
     //#endregion
+
+
 
     // #region close button
 
@@ -778,36 +757,22 @@ window.addEventListener('mouseup', (event) => {
                 hideTooltip();
             } else if (document.getElementById('global-menu')) {
                 hideGlobalMenu();
-            } else if (event.ctrlKey || event.metaKey) {
-                const rect = imageLayer.getBoundingClientRect();
-                const x = event.clientX - rect.left;
-                const y = event.clientY - rect.top;
-
-                const xPercent = (x / rect.width) * 100;
-                const yPercent = (y / rect.height) * 100;
-
-                map.pins.push({
-                    xPercent,
-                    yPercent,
-                    title: '',
-                    text: '',
-                    icon: '',
-                    color: getComputedStyle(document.documentElement)
-                        .getPropertyValue('--pin-default-color')
-                        .trim() || '#ffffff'
-                });
-
-                saveState();
-                renderPins();
             }
         }
     }
 
-    if (isDraggingPin) {
+    if (isDraggingPin && dragMoved) {
         isDraggingPin = false;
+        draggingPinEl = null;
         draggingPinIndex = null;
         saveState();
         renderPins();
+    }
+    else if (isDraggingPin) {
+        showInfoTooltip(draggingPinEl, map.pins[draggingPinIndex], draggingPinIndex);
+        isDraggingPin = false;
+        draggingPinEl = null;
+        draggingPinIndex = null;
     }
 });
 
@@ -848,46 +813,41 @@ window.addEventListener('resize', () => {
 
 //#endregion
 //#region viewer
+viewer.addEventListener('dblclick', (event) => {
+    const map = getCurrentMap();
 
+    const rect = imageLayer.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+
+    map.pins.push({
+        xPercent,
+        yPercent,
+        title: '',
+        text: '',
+        icon: '',
+        color: getComputedStyle(document.documentElement)
+            .getPropertyValue('--pin-default-color')
+            .trim() || '#ffffff'
+    });
+
+    saveState();
+    renderPins();
+});
 viewer.addEventListener('mousedown', (event) => {
+    //if (event.target.closest('.tooltip')) return;
+    if (event.button !== 0) return;
     const pinEl = event.target.closest('.pin');
     if (!pinEl) return;
-
-    if (!event.shiftKey) return;
-    event.preventDefault();
-
-    const index = parseInt(pinEl.dataset.index, 10);
-    const map = getCurrentMap();
-    if (!map) return;
 
     isDraggingPin = true;
-    draggingPinIndex = index;
+    draggingPinEl = pinEl;
+    draggingPinIndex = parseInt(pinEl.dataset.index, 10);
     dragMoved = false;
     hideTooltip();
-});
-
-viewer.addEventListener('click', (event) => {
-    if (event.target.closest('.tooltip')) return;
-
-    const pinEl = event.target.closest('.pin');
-    if (!pinEl) return;
-
-    if (dragMoved) {
-        dragMoved = false;
-        return;
-    }
-
-    event.stopPropagation();
-    const index = parseInt(pinEl.dataset.index, 10);
-    const map = getCurrentMap();
-    if (!map) return;
-    const pin = map.pins[index];
-
-    if (event.ctrlKey || event.metaKey) {
-        showEditTooltip(pinEl, pin, index);
-    } else {
-        showInfoTooltip(pinEl, pin, index);
-    }
 });
 
 viewer.addEventListener('wheel', (event) => {
