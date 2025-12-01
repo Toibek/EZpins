@@ -261,6 +261,7 @@ function showEditTooltip(pinElement, pin, index) {
 
     const currentColor = getPinColor(pin);
 
+    // TITLE
     const rowTitle = document.createElement('div');
     rowTitle.className = 'tooltip-row';
     const labelTitle = document.createElement('div');
@@ -272,6 +273,7 @@ function showEditTooltip(pinElement, pin, index) {
     rowTitle.appendChild(labelTitle);
     rowTitle.appendChild(inputTitle);
 
+    // NOTE
     const rowNote = document.createElement('div');
     rowNote.className = 'tooltip-row';
     const labelNote = document.createElement('div');
@@ -282,8 +284,7 @@ function showEditTooltip(pinElement, pin, index) {
     rowNote.appendChild(labelNote);
     rowNote.appendChild(inputNote);
 
-    const emoji = document.createElement('emoji');
-    rowNote.appendChild(emoji)
+    // ICON
     const rowIcon = document.createElement('div');
     rowIcon.className = 'tooltip-row';
     const labelIcon = document.createElement('div');
@@ -296,36 +297,41 @@ function showEditTooltip(pinElement, pin, index) {
     rowIcon.appendChild(labelIcon);
     rowIcon.appendChild(inputIcon);
 
+    // COLOR
     const rowColor = document.createElement('div');
     rowColor.className = 'tooltip-row';
+    //label
     const labelColor = document.createElement('div');
     labelColor.className = 'tooltip-label';
     labelColor.textContent = 'Pin color';
+    //row
+    const rowColorInput = document.createElement('div');
+    rowColorInput.style.display = 'flex';
+    rowColorInput.style.gap = '0.25rem';
+    //input color
     const inputColor = document.createElement('input');
     inputColor.type = 'color';
     inputColor.value = currentColor;
-    rowColor.appendChild(labelColor);
-    rowColor.appendChild(inputColor);
-
-    const actions = document.createElement('div');
-    actions.className = 'tooltip-actions';
-
-    const saveBtn = document.createElement('button');
-    saveBtn.textContent = 'Save';
-    saveBtn.addEventListener('click', () => {
-        const map = getCurrentMap();
-        if (!map) return;
-        const p = map.pins[index];
-        if (!p) return;
-        p.title = inputTitle.value.trim();
-        p.text = inputNote.value.trim();
-        p.icon = inputIcon.value.trim();
-        p.color = inputColor.value || currentColor;
-        saveState();
-        hideTooltip();
-        renderPins();
+    inputColor.style.width = '40px';
+    //input hex
+    const inputColorHex = document.createElement('input');
+    inputColorHex.type = 'text';
+    inputColorHex.value = currentColor;
+    inputColorHex.style.minWidth = '60px';
+    inputColorHex.maxLength = 7;
+    //sync
+    inputColor.addEventListener('input', () => {
+        inputColorHex.value = inputColor.value;
+    });
+    inputColorHex.addEventListener('focus', () => {
+        inputColorHex.select();
+    });
+    inputColorHex.addEventListener('input', () => {
+        inputColor.value = inputColorHex.value;
     });
 
+    // ACTIONS
+    const actions = document.createElement('div');
     const deleteBtn = document.createElement('button');
     deleteBtn.textContent = 'Delete';
     deleteBtn.className = 'danger';
@@ -337,15 +343,17 @@ function showEditTooltip(pinElement, pin, index) {
         hideTooltip();
         renderPins();
     });
+    const deleteWarning = document.createElement('label');
+    deleteWarning.textContent = " This cannot be undone.";
+    deleteWarning.style.color = 'red';
 
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', hideTooltip);
-
-    actions.appendChild(saveBtn);
+    // ASSEMBLE
+    rowColor.appendChild(labelColor);
+    rowColorInput.appendChild(inputColor);
+    rowColorInput.appendChild(inputColorHex);
+    rowColor.appendChild(rowColorInput);
     actions.appendChild(deleteBtn);
-    actions.appendChild(closeBtn);
-
+    actions.appendChild(deleteWarning);
     tooltip.appendChild(rowTitle);
     tooltip.appendChild(rowNote);
     tooltip.appendChild(rowIcon);
@@ -353,7 +361,28 @@ function showEditTooltip(pinElement, pin, index) {
     tooltip.appendChild(actions);
 
     viewer.appendChild(tooltip);
+
     positionTooltip(tooltip, pinElement);
+
+    // AUTO SAVE
+    inputTitle.addEventListener('input', autoSave);
+    inputNote.addEventListener('input', autoSave);
+    inputIcon.addEventListener('input', autoSave);
+    inputColor.addEventListener('input', autoSave);
+    inputColorHex.addEventListener('input', autoSave);
+
+    function autoSave() {
+        const map = getCurrentMap();
+        if (!map) return;
+        const p = map.pins[index];
+        if (!p) return;
+        p.title = inputTitle.value.trim();
+        p.text = inputNote.value.trim();
+        p.icon = inputIcon.value.trim();
+        p.color = inputColor.value || currentColor;
+        saveState();
+        renderPins();
+    }
 }
 //#endregion
 
