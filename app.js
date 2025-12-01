@@ -143,18 +143,9 @@ function renderPins() {
 
         const content = document.createElement('div');
         content.className = 'pin-content';
+        content.style.fontFamily = 'Garamond, serif';
 
-        const iconVal = pin.icon || '';
-        if (iconVal) {
-            if (iconVal.trim().startsWith('http')) {
-                const imgEl = document.createElement('img');
-                imgEl.src = iconVal.trim();
-                imgEl.alt = '';
-                content.appendChild(imgEl);
-            } else {
-                content.textContent = iconVal;
-            }
-        }
+        content.textContent = pin.icon || '';
 
         el.appendChild(base);
         el.appendChild(tail);
@@ -218,18 +209,14 @@ function showInfoTooltip(pinElement, pin, index) {
         iconRow.appendChild(circle);
 
         if (pin.icon) {
-            if (pin.icon.trim().startsWith('http')) {
-                const iconImg = document.createElement('img');
-                iconImg.src = pin.icon.trim();
-                iconImg.alt = '';
-                circle.appendChild(iconImg);
-            } else {
-                const iconSpan = document.createElement('span');
-                iconSpan.textContent = pin.icon;
-                circle.appendChild(iconSpan);
-            }
+            const iconSpan = document.createElement('span');
+
+            iconSpan.style.fontFamily = 'Garamond, serif';
+            iconSpan.textContent = pin.icon;
+            circle.appendChild(iconSpan);
         }
     }
+
 
     const titleRow = document.createElement('div');
     titleRow.className = 'tooltip-title-display';
@@ -296,6 +283,7 @@ function showEditTooltip(pinElement, pin, index) {
     const inputTitle = document.createElement('input');
     inputTitle.type = 'text';
     inputTitle.value = pin.title || '';
+
     rowTitle.appendChild(labelTitle);
     rowTitle.appendChild(inputTitle);
 
@@ -306,18 +294,21 @@ function showEditTooltip(pinElement, pin, index) {
     labelNote.textContent = 'Note';
     const inputNote = document.createElement('textarea');
     inputNote.value = pin.text || '';
+
     rowNote.appendChild(labelNote);
     rowNote.appendChild(inputNote);
 
     const rowIcon = document.createElement('div');
     rowIcon.className = 'tooltip-row';
+
     const labelIcon = document.createElement('div');
     labelIcon.className = 'tooltip-label';
-    labelIcon.textContent = 'Icon (emoji or image URL)';
+    labelIcon.textContent = 'Icon (emoji)';
     const inputIcon = document.createElement('input');
     inputIcon.type = 'text';
-    inputIcon.placeholder = '🏰 or https://.../icon.png';
+    inputIcon.placeholder = 'press Win + .';
     inputIcon.value = pin.icon || '';
+
     rowIcon.appendChild(labelIcon);
     rowIcon.appendChild(inputIcon);
 
@@ -329,9 +320,30 @@ function showEditTooltip(pinElement, pin, index) {
     const inputColor = document.createElement('input');
     inputColor.type = 'color';
     inputColor.value = currentColor;
-    rowColor.appendChild(labelColor);
-    rowColor.appendChild(inputColor);
+    //inputColor.style.width = '40px';
+    //input hex
+    const inputColorHex = document.createElement('input');
+    inputColorHex.type = 'text';
+    inputColorHex.value = currentColor;
+    inputColorHex.style.width = '60px';
+    inputColorHex.maxLength = 7;
+    //sync
+    inputColor.addEventListener('input', () => {
+        inputColorHex.value = inputColor.value;
+    });
+    inputColorHex.addEventListener('focus', () => {
+        inputColorHex.select();
+    });
+    inputColorHex.addEventListener('input', () => {
+        inputColor.value = inputColorHex.value;
+    });
 
+    rowColor.appendChild(labelColor);
+    rowColorInput.appendChild(inputColor);
+    rowColorInput.appendChild(inputColorHex);
+    rowColor.appendChild(rowColorInput);
+
+    // ACTIONS
     const actions = document.createElement('div');
     actions.className = 'tooltip-actions';
 
@@ -362,15 +374,14 @@ function showEditTooltip(pinElement, pin, index) {
         hideTooltip();
         renderPins();
     });
+    const deleteWarning = document.createElement('label');
+    deleteWarning.textContent = " cannot be undone.";
+    deleteWarning.style.color = 'red';
 
-    const closeBtn = document.createElement('button');
-    closeBtn.textContent = 'Close';
-    closeBtn.addEventListener('click', hideTooltip);
-
-    actions.appendChild(saveBtn);
     actions.appendChild(deleteBtn);
-    actions.appendChild(closeBtn);
+    actions.appendChild(deleteWarning);
 
+    // ASSEMBLE
     tooltip.appendChild(rowTitle);
     tooltip.appendChild(rowNote);
     tooltip.appendChild(rowIcon);
@@ -801,7 +812,7 @@ viewer.addEventListener('wheel', (event) => {
 
 viewer.addEventListener('contextmenu', (event) => {
     if (event.ctrlKey) return;
-    //if (event.target.closest('.tooltip')) return;
+    if (event.target.closest('.tooltip')) return;
     event.preventDefault();
     const pinEl = event.target.closest('.pin');
     if (pinEl) {
